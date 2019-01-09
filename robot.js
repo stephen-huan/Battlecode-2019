@@ -4,6 +4,8 @@ import {
 } from 'battlecode';
 
 var step = -1
+var flocations = []
+var klocations = []
 class MyRobot extends BCAbstractRobot {
     turn() {
         step++;
@@ -70,6 +72,24 @@ class MyRobot extends BCAbstractRobot {
                 return
 			return this.move(...best_move);
         } else if (this.me.unit === SPECS.CASTLE) {
+			//find karbonite/fuel locations
+			if (step == 0) {
+				var fmap = this.fuel_map
+				var kmap = this.karbonite_map
+				//this.log(fmap)
+				//this.log(kmap)
+				for(var y=0; y<fmap.length; y++)
+				{
+					for(var x=0; x<fmap.length; x++){
+						if(fmap[y][x])
+							flocations.push([x,y])
+						if(kmap[y][x])
+							klocations.push([x,y])
+					}
+				}
+				this.log("Fuel Locations " + flocations)
+				this.log("Karbonite Locations " + klocations)
+			}
             this.log("CASTLE");
             const choices = [
                 [-1, -1],
