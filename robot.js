@@ -29,6 +29,8 @@ class MyRobot extends BCAbstractRobot {
           continue
         if (!map[y1][x1])
           continue
+        if(this.getVisibleRobotMap()[y1][x1]>0)
+          continue
         var dist = Math.pow(Math.pow(goal_x - x1, 2) + Math.pow(goal_y - y1, 2), 0.5)
         if (dist < min_dist) {
             min_dist = dist
