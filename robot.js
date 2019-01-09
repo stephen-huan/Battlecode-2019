@@ -49,7 +49,6 @@ class MyRobot extends BCAbstractRobot {
             const goal_y = 0
             var min_dist = 999999
             var best_move = [0, 0]
-            var count = 0
             for (var i = 0; i < choices.length; i++) {
                 var x1 = this.me.x + choices[i][0]
                 var y1 = this.me.y + choices[i][1]
@@ -65,7 +64,6 @@ class MyRobot extends BCAbstractRobot {
                 if (dist < min_dist) {
                     min_dist = dist
                     best_move = choices[i]
-                    count += 1
                 }
             }
             if (min_dist == 999999)
