@@ -13,9 +13,7 @@ class MyRobot extends BCAbstractRobot {
       if (this.me.x == 0 && this.me.y == 0)
         return
       this.log("CRUSADER");
-      const choices = [
-        [-2, -2],[-2, -1],[-2, 0],[-2, 1],[-2, 2],[-1, -2],[-1, -1],[-1, 0],[-1, 1],[-1, 2],[0, -2],[0, -1],[0, 1],[0, 2],[1, -2],[1, -1],[1, 0],[1, 1],[1, 2],[2, -2],[2, -1],[2, 0],[2, 1],[2, 2]
-      ]
+      const choices = [[-2, -2],[-2, -1],[-2, 0],[-2, 1],[-2, 2],[-1, -2],[-1, -1],[-1, 0],[-1, 1],[-1, 2],[0, -2],[0, -1],[0, 1],[0, 2],[1, -2],[1, -1],[1, 0],[1, 1],[1, 2],[2, -2],[2, -1],[2, 0],[2, 1],[2, 2],[3,0],[-3,0],[0,3],[0,-3]]
       //Note: just a basic test, only navigates to top left corner atm
       const goal_x = 0
       const goal_y = 0
@@ -43,8 +41,14 @@ class MyRobot extends BCAbstractRobot {
       return this.move(...best_move);
     } else if (this.me.unit === SPECS.CASTLE) {
       this.log("CASTLE");
+      const choices = [[-1,-1],[0,-1],[1,-1],[1,0],[-1,0],[0,-1],[0,1],[1,1]]
       if (step % 10 === 0)
-        return this.buildUnit(SPECS.CRUSADER, 1, 1);
+        for(var i=0; i<choices.length; i++) {
+          var x=choices[i][0]
+          var y=choices[i][1]
+          if(map[this.me.y+y][this.me.x+x])
+            return this.buildUnit(SPECS.CRUSADER,x,y)
+        }
       else
         return // this.log("Castle health: " + this.me.health);
     }
