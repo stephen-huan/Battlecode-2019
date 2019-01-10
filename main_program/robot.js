@@ -2,7 +2,7 @@ import {
    BCAbstractRobot,
    SPECS
 } from 'battlecode';
-
+var somenewchange
 var step = -1;
 class MyRobot extends BCAbstractRobot {
    turn() {
