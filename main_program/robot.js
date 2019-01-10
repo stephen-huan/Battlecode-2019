@@ -6,19 +6,31 @@ var step = -1;
 //castle variables
 var flocations = []
 var klocations = []
+var castlelist = []
+//crusader variables
+var goal_x
+var goal_y
 class MyRobot extends BCAbstractRobot {
   turn() {
     step++;
     var map = this.getPassableMap();
-    var goal_x = null;
-    var goal_y = null;
+
     var kmap = this.getKarboniteMap();
     var fmap = this.getFuelMap();
     var church_x = null;
     var church_y = null;
     if (this.me.unit === SPECS.CRUSADER) {
-      // this.log("Crusader health: " + this.me.health);
-      if (this.me.x == 0 && this.me.y == 0)
+      this.log("heading towards "+goal_x+','+goal_y)
+      if(step==0) {
+        var castle_robot=this.getVisibleRobotMap()[this.me.y][this.me.x-1]
+        var transmission = this.getRobot(castle_robot).signal
+        this.log("received transmission " + transmission)
+        goal_y=transmission%100
+        goal_x=Math.floor((transmission-goal_y)/100)
+        this.log('set coordinates '+goal_x+','+goal_y)
+      }
+
+      if (this.me.x == goal_x && this.me.y == goal_y)
         return
       this.log("CRUSADER");
       const choices = [
@@ -51,14 +63,27 @@ class MyRobot extends BCAbstractRobot {
         [-3, 0],
         [0, -3]
       ]
-      //Note: just a basic test, only navigates to top left corner atm
-      const goal_x = 0
-      const goal_y = 0
       return this.choose_move(goal_x, goal_y, choices)
     } else if (this.me.unit === SPECS.CASTLE) {
+
+      var map = this.getVisibleRobotMap()
+      var mapCount = 0
+      for(var i=0; i<map.length; i++)
+        for(var j=0; j<map[i].length; j++)
+          if(map[i][j]>0)
+            mapCount+=1
+      this.log("Counted " + mapCount + " from this.getVisibleRobotMap()")
+
+      var listCount = 0
+      listCount = this.getVisibleRobots().length
+      this.log("Counted " + listCount + " from this.getVisibleRobots()")
+      this.log(this.getVisibleRobots())
+
+      return
       if (step == 0) {
         var fmap = this.fuel_map
         var kmap = this.karbonite_map
+        var roboCount=0
         //this.log(fmap)
         //this.log(kmap)
         for (var y = 0; y < fmap.length; y++) {
@@ -67,12 +92,29 @@ class MyRobot extends BCAbstractRobot {
               flocations.push([x, y])
             if (kmap[y][x])
               klocations.push([x, y])
+            var robotId=this.getVisibleRobotMap()[y][x]
+
+            if(robotId>0)
+              roboCount+=1
+            //{
+            //  roboCount+=1
+            //  if(this.getRobot(robotId).unit==0)
+            //    castlelist.push([x,y])
+            //}
           }
         }
-        this.log("Fuel Locations " + flocations)
-        this.log("Karbonite Locations " + klocations)
+        this.log("Fuel Locations ")
+        this.log(flocations)
+        this.log("Karbonite Locations ")
+        this.log(klocations)
+        this.log('castles')
+        this.log(this.getVisibleRobots())
+        this.log('length is '+this.getVisibleRobots().length)
+        //this.log(castlelist)
+        this.log(roboCount)
       }
       this.log("CASTLE");
+
       /*
       if (step < 5) {
          var dx = 1
@@ -94,13 +136,23 @@ class MyRobot extends BCAbstractRobot {
          }
          return this.buildUnit(SPECS.PILGRIM, dx, dy);
          */
-      if (step % 10 === 0) {
-        this.log("Building a crusader at " + (this.me.x + 1) + ", " + (this.me.y + 1));
-        //var coords =
-        //  this.signal()
-        return this.buildUnit(SPECS.CRUSADER, 1, 1);
-      } else {
-        return // this.log("Castle health: " + this.me.health);
+      if (step % 10 === 0 && step<10) {
+        //this.log("Building a crusader at " + (this.me.x + 1) + ", " + (this.me.y + 0));
+        if (klocations.length==0 && flocations.length==0)
+          return
+        var coords
+        if(klocations.length>0)
+          coords = klocations.splice(klocations.length-1)
+        else
+          coords = flocations.splice(flocations.length-1)
+        var x_pos = coords[0][0]
+        var y_pos = coords[0][1]
+        this.log('attempint to send robot to '+x_pos + ','+y_pos)
+        var val = x_pos*100 + y_pos
+        this.log("attempting to transmit value "+val)
+        this.signal(val,1)
+        this.log("signaled coords "+val)
+        return this.buildUnit(SPECS.CRUSADER, 1, 0);
       }
 
     } else if (this.me.unit === SPECS.PILGRIM) {
