@@ -106,7 +106,11 @@ class MyRobot extends BCAbstractRobot {
             [0, 1],
             [1, -1],
             [1, 0],
-            [1, 1]
+            [1, 1],
+            [2, 0],
+            [-2, 0],
+            [0, 2],
+            [0, -2]
          ]
 
          if(this.me.turn === 1){
