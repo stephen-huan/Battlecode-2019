@@ -2,7 +2,62 @@ import {
   BCAbstractRobot,
   SPECS
 } from 'battlecode';
+//some general global vars
 var step = -1;
+var r2choices = [
+  [-1, -1],
+  [-1, 0],
+  [-1, 1],
+  [0, -1],
+  [0, 1],
+  [1, -1],
+  [1, 0],
+  [1, 1]
+]
+var r4choices = [
+  [-1, -1],
+  [-1, 0],
+  [-1, 1],
+  [0, -1],
+  [0, 1],
+  [1, -1],
+  [1, 0],
+  [1, 1],
+  [2, 0],
+  [-2, 0],
+  [0, 2],
+  [0, -2]
+]
+var r9choices = [
+  [-2, -2],
+  [-2, -1],
+  [-2, 0],
+  [-2, 1],
+  [-2, 2],
+  [-1, -2],
+  [-1, -1],
+  [-1, 0],
+  [-1, 1],
+  [-1, 2],
+  [0, -2],
+  [0, -1],
+  [0, 1],
+  [0, 2],
+  [1, -2],
+  [1, -1],
+  [1, 0],
+  [1, 1],
+  [1, 2],
+  [2, -2],
+  [2, -1],
+  [2, 0],
+  [2, 1],
+  [2, 2],
+  [3, 0],
+  [0, 3],
+  [-3, 0],
+  [0, -3]
+]
 //variables maintained by each castle
 var flocations = [] //flocations is fuel locations of [[x1,y1],...]
 var klocations = [] //klocations is karbonite locations with same format as flocations
@@ -10,59 +65,24 @@ var castlelist = [] //castelist is a list of all castles on same team (self incl
 //crusader variables
 var goal_x //current x destination
 var goal_y //curent y destination
+var known_robots //list of all robots that have been seen by the crusader
+//hardcoded values for castle_talk transmission
+var removeFuel = 0b111 //value for a castle to remove a deposit from it's list of unvisited deposits
+var removeKarbonite = 0b101 //same as removeFuel but for Karbonite
 class MyRobot extends BCAbstractRobot {
   turn() {
     step++;
     var map = this.getPassableMap();
     var kmap = this.getKarboniteMap();
     var fmap = this.getFuelMap();
-    var church_x = null;
-    var church_y = null;
     if (this.me.unit === SPECS.CRUSADER) {
-      //this.log("heading towards "+goal_x+','+goal_y)
-      if (step == 0) {
-        var castle_robot = this.getVisibleRobotMap()[this.me.y][this.me.x - 1]
-        var transmission = this.getRobot(castle_robot).signal
-        //this.log("received transmission " + transmission)
-        goal_y = transmission % 100
-        goal_x = Math.floor((transmission - goal_y) / 100)
-        //this.log('set coordinates '+goal_x+','+goal_y)
-      }
-
+      return
+      //check if at goal
       if (this.me.x == goal_x && this.me.y == goal_y)
         return
-      //this.log("CRUSADER");
-      const choices = [
-        [-2, -2],
-        [-2, -1],
-        [-2, 0],
-        [-2, 1],
-        [-2, 2],
-        [-1, -2],
-        [-1, -1],
-        [-1, 0],
-        [-1, 1],
-        [-1, 2],
-        [0, -2],
-        [0, -1],
-        [0, 1],
-        [0, 2],
-        [1, -2],
-        [1, -1],
-        [1, 0],
-        [1, 1],
-        [1, 2],
-        [2, -2],
-        [2, -1],
-        [2, 0],
-        [2, 1],
-        [2, 2],
-        [3, 0],
-        [0, 3],
-        [-3, 0],
-        [0, -3]
-      ]
+      //otherwise, move towards goal
       return this.choose_move(goal_x, goal_y, choices)
+
     } else if (this.me.unit === SPECS.CASTLE) {
       if (step == 0) {
         var robotlist = this.getVisibleRobots()
@@ -83,6 +103,10 @@ class MyRobot extends BCAbstractRobot {
         this.castleTalk(this.me.x + 100)
         this.log("Broadcasted x-coordinate " + this.me.x)
       }
+      if (step == 1) {
+        this.castleTalk(this.me.y + 100)
+        this.log("Broadcasted y-coordinate " + this.me.y)
+      }
       if (step <= 3) {
         for (var i = 0; i < castlelist.length; i++) {
           var otherCastle = this.getRobot(castlelist[i][0])
@@ -99,142 +123,63 @@ class MyRobot extends BCAbstractRobot {
           }
         }
       }
-      if (step == 1) {
-        this.castleTalk(this.me.y + 100)
-        this.log("Broadcasted y-coordinate " + this.me.y)
-      }
-      //find other castles
-
-
-      //this.log("CASTLE");
-      //remove from floc is code 0b111
-      //remove from kloc is code 0b101
+      //code to check for transmission from friendly castles
       for (var i = 0; i < castlelist.length; i++)
-        if (this.getRobot(castlelist[i][0]).castle_talk == 0b111)
+        if (this.getRobot(castlelist[i][0]).castle_talk == removeFuel)
           flocations.splice(flocations.length - 1)
-      else if (this.getRobot(castlelist[i][0]).castle_talk == 0b101)
+      else if (this.getRobot(castlelist[i][0]).castle_talk == removeKarbonite)
         klocations.splice(klocations.length - 1)
-      this.log(castlelist)
-      //this.log(castlelist)
-      //this.log("FUEL")
-      //this.log(flocations)
-      //this.log("KARBONITE")
-      //this.log(klocations)
-      /*
-      if (step < 5) {
-         var dx = 1
-         var dy = 1
-         if (!this.map[this.me.x + 1][this.me.y + 1]) {
-            this.log("Building a pilgrim at " + (this.me.x + 1) + ", " + (this.me.y + 1));
-         } else if (!this.map[this.me.x - 1][this.me.y - 1]) {
-            this.log("Building a pilgrim at " + (this.me.x - 1) + ", " + (this.me.y - 1));
-            dx = -1;
-            dy = -1;
-         } else if (!this.map[this.me.x - 1][this.me.y + 1]) {
-            this.log("Building a pilgrim at " + (this.me.x - 1) + ", " + (this.me.y + 1));
-            dx = -1;
-            dy = 1;
-         } else if (!this.map[this.me.x + 1][this.me.y - 1]) {
-            this.log("Building a pilgrim at " + (this.me.x + 1) + ", " + (this.me.y - 1));
-            dx = 1;
-            dy = -1;
-         }
-         return this.buildUnit(SPECS.PILGRIM, dx, dy);
-         */
-      //only start to build on turn 1, otherwise can't identify castles
-      /*
-      if (step>1 && (step-2) % 10 === 0 && this.karbonite>=20 && this.fuel>=50) {
-        //this.log("Building a crusader at " + (this.me.x + 1) + ", " + (this.me.y + 0));
-        if (klocations.length==0 && flocations.length==0)
+
+      if (step > 2 && this.fuel >= 50 && this.karbonite >= 20) {
+        //this.log("length is "+r2choices.length)
+        var location = this.choose_spawn(this, r2choices)
+        if (location != undefined) {
+          this.log('location is ' + location)
+          var x = location[0]
+          var y = location[1]
+          this.log('Building crusader at '+(x+this.me.x)+','+(y+this.me.y))
+          return this.buildUnit(SPECS.CRUSADER, x, y)
           return
-        var coords
-        var isKarbonite=true
-        if(klocations.length>0)
-          coords = klocations.splice(klocations.length-1)
-        else {
-          coords = flocations.splice(flocations.length-1)
-          isKarbonite=false
         }
-        var x_pos = coords[0][0]
-        var y_pos = coords[0][1]
-        var val = x_pos*100 + y_pos
-        this.signal(val,1)
-        if(isKarbonite)
-          this.castleTalk(0b101)
         else
-          this.castleTalk(0b111)
-        return this.buildUnit(SPECS.CRUSADER, 1, 0);
+          this.log("no spawn locations available")
       }
-      */
 
     } else if (this.me.unit === SPECS.PILGRIM) {
-
-      const choices = [
-        [-1, -1],
-        [-1, 0],
-        [-1, 1],
-        [0, -1],
-        [0, 1],
-        [1, -1],
-        [1, 0],
-        [1, 1],
-        [2, 0],
-        [-2, 0],
-        [0, 2],
-        [0, -2]
-      ]
-
-      if (this.me.turn === 1) {
-        this.log("Setting home coords at " + this.me.x + ", " + this.me.y);
-        church_x = this.me.x;
-        church_y = this.me.y;
-      }
-      if (this.me.karbonite === 20 || this.me.fuel === 100) {
-        this.log("full of resources");
-        var vis = this.getVisibleRobots();
-        for (var i = 0; i < vis.length; i++) {
-          this.log("inside for loop");
-          var bot = vis[i];
-          if (bot.unit === 0 || bot.unit === 1) {
-            this.log("Checking distance");
-            if (Math.abs(bot.x - this.me.x) < 1 && Math.abs(bot.y - this.me.y) < 1) {
-              this.log("trying to give");
-              this.give(bot.x - this.me.x, bot.y - this.me.y, this.me.karbonite, this.me.fuel);
-              goal_x = null;
-              goal_y = null;
-            }
-          }
-        }
-        goal_x = church_x;
-        goal_y = church_y;
-      } else if (kmap[this.me.y][this.me.x] === true) {
-        this.log("MINING at " + this.me.x + ", " + this.me.y + " and " + kmap[this.me.y][this.me.x]);
-        return this.mine();
-      }
-      if (goal_x == null) {
-        var maxdist = 10000;
-        for (var i = 0; i < kmap.length; i++) {
-          for (var j = 0; j < kmap.length; j++) {
-            if (kmap[j][i]) {
-              var d = Math.abs(Math.hypot(i - this.me.x, j - this.me.y));
-              if (d < maxdist) {
-                goal_x = i;
-                goal_y = j;
-              }
-            }
-          }
-        }
-      }
-      this.log("PILGRIM at " + this.me.x + ", " + this.me.y);
-      return this.choose_move(goal_x, goal_y, choices);
 
     }
   }
   get_dist(x1, y1, x2, y2) {
     return Math.pow(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2), 0.5)
   }
+  coords_from_transmit(robot) {
+    //TODO: Fix to search for castle
+    var castle_robot = this.getVisibleRobotMap()[this.me.y][this.me.x - 1]
+    var transmission = this.getRobot(castle_robot).signal
+    goal_y = transmission % 100
+    goal_x = Math.floor((transmission - goal_y) / 100)
+  }
+
+  choose_spawn(robot, choices) {
+    //this.log("now length is "+choices.length)
+    var obstacles = this.map
+    var x1 = robot.me.x
+    var y1 = robot.me.y
+    //this.log('pass 1')
+    for (var val = 0; val < choices.length; val++) {
+      //this.log('pass 2')
+      //this.log(choices[val])
+      var xPos = choices[val][0]
+      var yPos = choices[val][1]
+      //this.log(xPos + ' ' + yPos)
+      if (this.map[y1 + yPos][x1 + xPos] && this.getVisibleRobotMap()[yPos + y1][xPos + x1] <= 0)
+        return choices[val]
+      else
+        this.log("Spawn position "+(x1+xPos)+','+(y1+yPos)+' is occupied')
+    }
+  }
   choose_move(goal_x, goal_y, choices) {
-    var min_dist = 999999
+    var min_dist = Infinity
     var best_move = [0, 0]
     for (var i = 0; i < choices.length; i++) {
       var x1 = this.me.x + choices[i][0]
@@ -251,11 +196,12 @@ class MyRobot extends BCAbstractRobot {
         best_move = choices[i]
       }
     }
-    if (min_dist == 999999) {
+    if (min_dist == Infinity)
       return
-    }
-    return this.move(...best_move);
+    else
+      return this.move(...best_move);
   }
 }
+
 
 var robot = new MyRobot();
