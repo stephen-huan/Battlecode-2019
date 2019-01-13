@@ -3,6 +3,7 @@ import {
   SPECS
 } from 'battlecode';
 //some general global vars
+var pMax=5
 var step = -1;
 var home_x
 var home_y
@@ -70,12 +71,17 @@ var r9choices = [
 var flocations = [] //flocations is fuel locations of [[x1,y1],...]
 var klocations = [] //klocations is karbonite locations with same format as flocations
 var castlelist = [] //castelist is a list of all castles on same team (self included), format [[id1,x1,y1],...]
+var myself //need to make `this` a global var in order for sort to work
+var pcount = 0 //total number of pilgrims
+var kdest = 0 //total num of pilgrims headed to karbonite
+var fdest = 0 //total num of pilgrims headed to fuel
 //crusader variables
 var goal_x //current x destination
 var goal_y //curent y destination
+var deposit_x //assigned deposit x
+var deposit_y //assigned deposit y
 var known_robots = [] //list of all robots that have been seen by the crusader
 //PILGRIM
-var head_home=false
 var fullK = false
 var fullF = false
 var home_ID
@@ -116,6 +122,14 @@ class MyRobot extends BCAbstractRobot {
               klocations.push([x, y])
           }
         }
+        home_x=this.me.x
+        home_y=this.me.y
+        myself=this
+        this.log(klocations)
+        klocations.sort(this.sort_func)
+        this.log(klocations)
+        //sort resource locations
+
         this.castleTalk(this.me.x + 100)
         this.log("Broadcasted x-coordinate " + this.me.x)
       }
@@ -149,20 +163,32 @@ class MyRobot extends BCAbstractRobot {
       //check if their are available fuel spots
       var hasFuel = flocations.length>0
       var hasKarbonite = klocations.length>0
-      if (step > 2 && this.fuel >= 50 && this.karbonite >= 20 && (hasFuel || hasKarbonite)) {
+      if (pcount<pMax && step > 2 && this.fuel >= 50 && this.karbonite >= 20 && (hasFuel || hasKarbonite)) {
         var location = this.choose_spawn(this, r1choices)
         if (location != undefined) {
           this.log('location is ' + location)
           var x = location[0]
           var y = location[1]
           this.log('Building pilgrim at ' + (x + this.me.x) + ',' + (y + this.me.y))
-          if(hasKarbonite)
+          if(hasKarbonite && !hasFuel)
             var goal_coords = klocations.splice(klocations.length - 1)
-          else
-            var goal_coords = flocations.splice(klocations.length - 1)
+          else if(!hasKarbonite && hasFuel)
+            var goal_coords = flocations.splice(flocations.length - 1)
+          else if(kdest>fdest) {
+            var goal_coords = flocations.splice(flocations.length - 1)
+            this.log("SENDING TO FUEL")
+            fdest++
+          }
+          else {
+            var goal_coords = klocations.splice(klocations.length - 1)
+            this.log("SENDING TO KARBONITE")
+            kdest++
+          }
+
           this.log('goal coords is '+goal_coords)
           var val = goal_coords[0][0] * 100 + goal_coords[0][1]
           this.signal(val,2)
+          pcount++
           return this.buildUnit(SPECS.PILGRIM, x, y)
         } else
           this.log("no spawn locations available")
@@ -170,7 +196,7 @@ class MyRobot extends BCAbstractRobot {
 
     } else if (this.me.unit === SPECS.PILGRIM) {
       this.log("Start PILGRIM TURN")
-      if(step==0)
+      if (step==0)
       {
         this.set_home(this.me.x,this.me.y)
         this.set_goal()
@@ -182,9 +208,9 @@ class MyRobot extends BCAbstractRobot {
           this.log(this.me.karbonite+','+this.me.fuel)
           fullK=false
           fullF=false
-          //make em get out of the way when they've deposited resources
-          goal_x=0
-          goal_y=0
+          //make them go back to get resources
+          goal_x=deposit_x
+          goal_y=deposit_y
           return this.give(dX,dY,this.me.karbonite,this.me.fuel)
         }
         if(this.me.fuel >= 100)
@@ -193,14 +219,12 @@ class MyRobot extends BCAbstractRobot {
           goal_x=home_x
           goal_y=home_y
           fullF=true
-          head_home=true
         }
         else if(this.me.karbonite >= 20) {
           this.log("Full of karbonite, heading home")
           goal_x=home_x
           goal_y=home_y
           fullK=true
-          head_home=true
         }
         else {
           this.log("Harvesting resource.")
@@ -210,10 +234,25 @@ class MyRobot extends BCAbstractRobot {
       return this.choose_move(goal_x,goal_y,r4choices)
     }
   }
+  sort_func(depositA,depositB) {
+    var x1=depositA[0]
+    var y1=depositA[1]
+    var x2=depositB[0]
+    var y2=depositB[1]
+    var distA=myself.get_dist(x1,y1,home_x,home_y)
+    var distB=myself.get_dist(x2,y2,home_x,home_y)
+    if(distA<distB)
+      return 1
+    if(distA>distB)
+      return -1
+    return 0
+  }
   set_goal() {
     var dest = this.coords_from_transmit(this)
     goal_x=dest[0]
     goal_y=dest[1]
+    deposit_x=goal_x
+    deposit_y=goal_y
   }
   set_home(x1, y1) {
     home_x=x1
