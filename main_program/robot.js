@@ -3,7 +3,7 @@ import {
   SPECS
 } from 'battlecode';
 //some general global vars
-var pMax=5
+var pMax = 5
 var step = -1;
 var home_x
 var home_y
@@ -97,16 +97,36 @@ class MyRobot extends BCAbstractRobot {
     var kmap = this.getKarboniteMap();
     var fmap = this.getFuelMap();
     if (this.me.unit === SPECS.CRUSADER) {
+      //################################################
+      //################################################
+      //################################################
+      //################################################
+      //##################CRUSADER CODE#################
+      //################################################
+      //################################################
+      //################################################
+      //################################################
       return
       //check if at goal
       if (this.me.x == goal_x && this.me.y == goal_y)
         return
       //otherwise, move towards goal
+
       return this.choose_move(goal_x, goal_y, choices)
 
     } else if (this.me.unit === SPECS.CASTLE) {
+      //################################################
+      //################################################
+      //################################################
+      //################################################
+      //##################CASTLE CODE###################
+      //################################################
+      //################################################
+      //################################################
+      //################################################
       this.log("Start CASTLE TURN")
       if (step == 0) {
+        var t0 = (new Date).getTime()
         var robotlist = this.getVisibleRobots()
         for (var i = 0; i < robotlist.length; i++)
           castlelist.push([robotlist[i].id, -1, -1])
@@ -122,9 +142,9 @@ class MyRobot extends BCAbstractRobot {
               klocations.push([x, y])
           }
         }
-        home_x=this.me.x
-        home_y=this.me.y
-        myself=this
+        home_x = this.me.x
+        home_y = this.me.y
+        myself = this
         this.log(klocations)
         klocations.sort(this.sort_func)
         this.log(klocations)
@@ -132,6 +152,7 @@ class MyRobot extends BCAbstractRobot {
 
         this.castleTalk(this.me.x + 100)
         this.log("Broadcasted x-coordinate " + this.me.x)
+        this.log((new Date).getTime() - t0)
       }
       if (step == 1) {
         this.castleTalk(this.me.y + 100)
@@ -161,33 +182,32 @@ class MyRobot extends BCAbstractRobot {
         klocations.splice(klocations.length - 1)
 
       //check if their are available fuel spots
-      var hasFuel = flocations.length>0
-      var hasKarbonite = klocations.length>0
-      if (pcount<pMax && step > 2 && this.fuel >= 50 && this.karbonite >= 20 && (hasFuel || hasKarbonite)) {
+      var hasFuel = flocations.length > 0
+      var hasKarbonite = klocations.length > 0
+      if (pcount < pMax && step > 2 && this.fuel >= 50 && this.karbonite >= 20 && (hasFuel || hasKarbonite)) {
         var location = this.choose_spawn(this, r1choices)
         if (location != undefined) {
           this.log('location is ' + location)
           var x = location[0]
           var y = location[1]
           this.log('Building pilgrim at ' + (x + this.me.x) + ',' + (y + this.me.y))
-          if(hasKarbonite && !hasFuel)
+          if (hasKarbonite && !hasFuel)
             var goal_coords = klocations.splice(klocations.length - 1)
-          else if(!hasKarbonite && hasFuel)
+          else if (!hasKarbonite && hasFuel)
             var goal_coords = flocations.splice(flocations.length - 1)
-          else if(kdest>fdest) {
+          else if (kdest > fdest) {
             var goal_coords = flocations.splice(flocations.length - 1)
             this.log("SENDING TO FUEL")
             fdest++
-          }
-          else {
+          } else {
             var goal_coords = klocations.splice(klocations.length - 1)
             this.log("SENDING TO KARBONITE")
             kdest++
           }
 
-          this.log('goal coords is '+goal_coords)
+          this.log('goal coords is ' + goal_coords)
           var val = goal_coords[0][0] * 100 + goal_coords[0][1]
-          this.signal(val,2)
+          this.signal(val, 2)
           pcount++
           return this.buildUnit(SPECS.PILGRIM, x, y)
         } else
@@ -195,68 +215,87 @@ class MyRobot extends BCAbstractRobot {
       }
 
     } else if (this.me.unit === SPECS.PILGRIM) {
+      //################################################
+      //################################################
+      //################################################
+      //################################################
+      //##################PILGRIM CODE##################
+      //################################################
+      //################################################
+      //################################################
+      //################################################
       this.log("Start PILGRIM TURN")
-      if (step==0)
-      {
-        this.set_home(this.me.x,this.me.y)
+      if (step == 0) {
+        this.set_home(this.me.x, this.me.y)
         this.set_goal()
       }
-      if(this.me.x==goal_x && this.me.y==goal_y) {
-        if(fullK || fullF)
-        {
-          this.log("depositing resource to ["+(this.me.x+dX)+','+(this.me.y+dY)+']')
-          this.log(this.me.karbonite+','+this.me.fuel)
-          fullK=false
-          fullF=false
+      if (this.me.x == goal_x && this.me.y == goal_y) {
+        if (fullK || fullF) {
+          this.log("depositing resource to [" + (this.me.x + dX) + ',' + (this.me.y + dY) + ']')
+          this.log(this.me.karbonite + ',' + this.me.fuel)
+          fullK = false
+          fullF = false
           //make them go back to get resources
-          goal_x=deposit_x
-          goal_y=deposit_y
-          return this.give(dX,dY,this.me.karbonite,this.me.fuel)
+          goal_x = deposit_x
+          goal_y = deposit_y
+          return this.give(dX, dY, this.me.karbonite, this.me.fuel)
         }
-        if(this.me.fuel >= 100)
-        {
+        if (this.me.fuel >= 100) {
           this.log("Full of fuel, heading home")
-          goal_x=home_x
-          goal_y=home_y
-          fullF=true
-        }
-        else if(this.me.karbonite >= 20) {
+          goal_x = home_x
+          goal_y = home_y
+          fullF = true
+        } else if (this.me.karbonite >= 20) {
           this.log("Full of karbonite, heading home")
-          goal_x=home_x
-          goal_y=home_y
-          fullK=true
-        }
-        else {
+          goal_x = home_x
+          goal_y = home_y
+          fullK = true
+        } else {
           this.log("Harvesting resource.")
           return this.mine()
         }
       }
-      return this.choose_move(goal_x,goal_y,r4choices)
+      var d = {}
+      var t0 = (new Date).getTime()
+      var isPath = this.gen_all_moves(d)
+      if(isPath) {
+        var nextLoc = d[this.me.x*100+this.me.y]
+        this.log(nextLoc)
+        var newX = Math.floor(nextLoc/100)
+        var newY = nextLoc%100
+        return this.move(...[newX-this.me.x,newY-this.me.y])
+      }
+      else
+        this.log('could not bfs location')
+      var t1 = (new Date).getTime()
+      this.log(isPath + ' ' +(t1-t0))
+      for (var i = 0; i < 100; i++)
+        return this.choose_move(goal_x, goal_y, r4choices)
     }
   }
-  sort_func(depositA,depositB) {
-    var x1=depositA[0]
-    var y1=depositA[1]
-    var x2=depositB[0]
-    var y2=depositB[1]
-    var distA=myself.get_dist(x1,y1,home_x,home_y)
-    var distB=myself.get_dist(x2,y2,home_x,home_y)
-    if(distA<distB)
+  sort_func(depositA, depositB) {
+    var x1 = depositA[0]
+    var y1 = depositA[1]
+    var x2 = depositB[0]
+    var y2 = depositB[1]
+    var distA = myself.get_dist(x1, y1, home_x, home_y)
+    var distB = myself.get_dist(x2, y2, home_x, home_y)
+    if (distA < distB)
       return 1
-    if(distA>distB)
+    if (distA > distB)
       return -1
     return 0
   }
   set_goal() {
     var dest = this.coords_from_transmit(this)
-    goal_x=dest[0]
-    goal_y=dest[1]
-    deposit_x=goal_x
-    deposit_y=goal_y
+    goal_x = dest[0]
+    goal_y = dest[1]
+    deposit_x = goal_x
+    deposit_y = goal_y
   }
   set_home(x1, y1) {
-    home_x=x1
-    home_y=y1
+    home_x = x1
+    home_y = y1
   }
   get_dist(x1, y1, x2, y2) {
     return Math.pow(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2), 0.5)
@@ -267,14 +306,14 @@ class MyRobot extends BCAbstractRobot {
       var newUnit = visMap[i]
       if (newUnit.unit == 0) {
         this.log('Castle Found')
-        home_ID=newUnit.id
-        dX=newUnit.x-this.me.x
-        dY=newUnit.y-this.me.y
+        home_ID = newUnit.id
+        dX = newUnit.x - this.me.x
+        dY = newUnit.y - this.me.y
         var transmission = newUnit.signal
         this.log('transmission is ' + transmission)
         var new_y = transmission % 100
         var new_x = Math.floor((transmission - new_y) / 100)
-        return [new_x,new_y]
+        return [new_x, new_y]
       }
     }
   }
@@ -315,7 +354,48 @@ class MyRobot extends BCAbstractRobot {
     else
       return this.move(...best_move);
   }
+  gen_children(x, y, seen, map) {
+    var children = []
+    for (var d = 0; d < r4choices.length; d++) {
+      var newX = x + r4choices[d][0]
+      var newY = y + r4choices[d][1]
+      //this.log('position at [' + newX +',' +newY+']')
+      if (newX >= 0 && newX < map.length && newY >= 0 && newY < map.length && map[newY][newX] == 1 && (this.getVisibleRobotMap()[newY][newX]<=0 || this.getVisibleRobotMap()[newY][newX]==this.me.id)) {
+        var xy = newX * 100 + newY
+        //this.log('found valid position at  [' + newX +',' +newY+']')
+        if (!seen.has(xy)) {
+          //this.log('adding position [' + newX +',' +newY+'] to children')
+          children.push(xy)
+          seen.add(xy)
+        }
+      }
+    }
+    return children
+  }
+  gen_all_moves(dict) {
+    this.log("Navigating from [" + this.me.x + ',' + this.me.y + '] to [' + goal_x + ',' + goal_y + ']')
+    var goalLoc = this.me.x * 100 + this.me.y
+    var startLoc = goal_x * 100 + goal_y
+    //this.log('from '+startLoc+' to '+goalLoc)
+    var seenSet = new Set()
+    seenSet.add(startLoc)
+    var popPos = 0
+    var fringe = [startLoc]
+    while (popPos < fringe.length) {
+      var loc = fringe[popPos++]
+      //this.log(loc)
+      if (loc == goalLoc)
+        return true
+      var x = Math.floor(loc / 100)
+      var y = loc % 100
+      var children = this.gen_children(x, y, seenSet, this.map)
+      for (var c = 0; c < children.length; c++) {
+        fringe.push(children[c])
+        dict[children[c]] = loc
+      }
+    }
+    return false
+  }
 }
-
 
 var robot = new MyRobot();
