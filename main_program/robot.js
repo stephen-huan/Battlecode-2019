@@ -3,7 +3,9 @@ import {
   SPECS
 } from 'battlecode';
 //some general global vars
+var sym = "unset"// True for vertical sym, False for horizontal sym
 var pMax = 5
+var cMax = 15 //unused atm bc maximum zerg rush
 var step = -1;
 var home_x
 var home_y
@@ -72,7 +74,8 @@ var flocations = [] //flocations is fuel locations of [[x1,y1],...]
 var klocations = [] //klocations is karbonite locations with same format as flocations
 var castlelist = [] //castelist is a list of all castles on same team (self included), format [[id1,x1,y1],...]
 var myself //need to make `this` a global var in order for sort to work
-var pcount = 0 //total number of pilgrims
+var pcount = 0 //total number of pilgrims spawned
+var ccount = 0 //total number of crusaders spawned
 var kdest = 0 //total num of pilgrims headed to karbonite
 var fdest = 0 //total num of pilgrims headed to fuel
 //crusader variables
@@ -106,13 +109,38 @@ class MyRobot extends BCAbstractRobot {
       //################################################
       //################################################
       //################################################
-      return
-      //check if at goal
-      if (this.me.x == goal_x && this.me.y == goal_y)
-        return
-      //otherwise, move towards goal
+      this.log("Start CRUSADER TURN")
+      if (step == 0) {
+        this.set_goal()
+      }
 
-      return this.choose_move(goal_x, goal_y, choices)
+      var vis_bots = this.getVisibleRobots()
+      for(var i = 0; i < vis_bots.length; i++){
+         var bot = vis_bots[i]
+         if(bot.team != this.me.team){
+            this.log("Spotted enemy bot in vision radius")
+            var dx = bot.x - this.me.x
+            var dy = bot.y - this.me.y
+            if(dx*dx + dy*dy <= 16){
+               this.log("Attacking " + (this.me.x + dx) + ", " + (this.me.y + dy))
+               return this.attack(dx, dy)
+            }
+         }
+      }
+
+      //bfs to goal_x, goal_y
+      var d = {}
+      var t0 = (new Date).getTime()
+      var isPath = this.gen_all_moves(d)
+      if(isPath) {
+        var nextLoc = d[this.me.x*100+this.me.y]
+        this.log(nextLoc)
+        var newX = Math.floor(nextLoc/100)
+        var newY = nextLoc%100
+        return this.move(...[newX-this.me.x,newY-this.me.y])
+      }
+      else
+        this.log('could not bfs location')
 
     } else if (this.me.unit === SPECS.CASTLE) {
       //################################################
@@ -153,6 +181,18 @@ class MyRobot extends BCAbstractRobot {
         this.castleTalk(this.me.x + 100)
         this.log("Broadcasted x-coordinate " + this.me.x)
         this.log((new Date).getTime() - t0)
+
+        //find symmetry
+        for(var i = 0; i < fmap.length; i++){
+           for(var j = 0; j < fmap.length; j++){
+             if((fmap[j][i] === fmap[63-j][i]) && fmap[j][i]===1){
+                 sym = true
+             }
+             else{
+                 sym = false
+             }
+           }
+        }
       }
       if (step == 1) {
         this.castleTalk(this.me.y + 100)
@@ -181,7 +221,7 @@ class MyRobot extends BCAbstractRobot {
       else if (this.getRobot(castlelist[i][0]).castle_talk == removeKarbonite)
         klocations.splice(klocations.length - 1)
 
-      //check if their are available fuel spots
+      //check if there are available fuel spots
       var hasFuel = flocations.length > 0
       var hasKarbonite = klocations.length > 0
       if (pcount < pMax && step > 2 && this.fuel >= 50 && this.karbonite >= 20 && (hasFuel || hasKarbonite)) {
@@ -210,8 +250,39 @@ class MyRobot extends BCAbstractRobot {
           this.signal(val, 2)
           pcount++
           return this.buildUnit(SPECS.PILGRIM, x, y)
-        } else
-          this.log("no spawn locations available")
+       } else{
+            this.log("no spawn locations available")
+         }
+      }
+      else if(pcount >= pMax && step > 2){
+         var location = this.choose_spawn(this, r1choices)
+         if(location != undefined){
+
+           this.log('location is ' + location)
+           var x = location[0]
+           var y = location[1]
+           this.log('Building crusader at ' + (x + this.me.x) + ',' + (y + this.me.y))
+
+           var fmap = this.fuel_map
+           var cas_x = this.me.x
+           var cas_y = this.me.y
+           var goal_coords
+           if(sym===true){
+             goal_coords = [cas_x, (fmap.length-1)-cas_y]
+           }
+           else{
+             goal_coords = [(fmap.length-1)-cas_x, cas_y]
+           }
+
+           this.log('goal coords is ' + goal_coords)
+           var val = goal_coords[0] * 100 + goal_coords[1]
+           this.signal(val, 2)
+
+           return this.buildUnit(SPECS.CRUSADER, x, y)
+         }
+         else{
+            this.log("no spawn locations available")
+         }
       }
 
     } else if (this.me.unit === SPECS.PILGRIM) {
