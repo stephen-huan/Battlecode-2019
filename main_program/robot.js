@@ -269,8 +269,7 @@ class MyRobot extends BCAbstractRobot {
         this.log('could not bfs location')
       var t1 = (new Date).getTime()
       this.log(isPath + ' ' +(t1-t0))
-      for (var i = 0; i < 100; i++)
-        return this.choose_move(goal_x, goal_y, r4choices)
+      return this.choose_move(goal_x, goal_y, r4choices)
     }
   }
   sort_func(depositA, depositB) {
@@ -323,12 +322,12 @@ class MyRobot extends BCAbstractRobot {
     var x1 = robot.me.x
     var y1 = robot.me.y
     for (var val = 0; val < choices.length; val++) {
-      var xPos = choices[val][0]
-      var yPos = choices[val][1]
-      if (this.map[y1 + yPos][x1 + xPos] && this.getVisibleRobotMap()[yPos + y1][xPos + x1] <= 0)
+      var xPos = choices[val][0]+x1
+      var yPos = choices[val][1]+y1
+      if (xPos>=0 && xPos<this.map.length && yPos>=0 && yPos<this.map.length && this.map[yPos][xPos] && this.getVisibleRobotMap()[yPos][xPos] <= 0)
         return choices[val]
       else
-        this.log("Spawn position " + (x1 + xPos) + ',' + (y1 + yPos) + ' is occupied')
+        this.log("Spawn position " + (xPos) + ',' + (yPos) + ' is occupied')
     }
   }
   choose_move(goal_x, goal_y, choices) {
