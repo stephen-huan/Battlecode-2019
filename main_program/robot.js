@@ -3,12 +3,13 @@ import {
   SPECS
 } from 'battlecode';
 //some general global vars
-var sym = "unset"// True for vertical sym, False for horizontal sym
+var sym // True for vertical sym, False for horizontal sym
 var pMax = 5
 var cMax = 15 //unused atm bc maximum zerg rush
 var step = -1;
 var home_x
 var home_y
+var rush = false; //whether we're starting the rush
 var r1choices = [
   [-1, 0],
   [0, -1],
@@ -153,6 +154,9 @@ class MyRobot extends BCAbstractRobot {
       //################################################
       //################################################
       this.log("Start CASTLE TURN")
+      if(this.karbonite <= 20){
+         rush = false
+      }
       if (step == 0) {
         var t0 = (new Date).getTime()
         var robotlist = this.getVisibleRobots()
@@ -183,13 +187,15 @@ class MyRobot extends BCAbstractRobot {
         this.log((new Date).getTime() - t0)
 
         //find symmetry
+        sym = false
         for(var i = 0; i < fmap.length; i++){
            for(var j = 0; j < fmap.length; j++){
              if((fmap[j][i] === fmap[63-j][i]) && fmap[j][i]===1){
-                 sym = true
+                 continue
              }
              else{
-                 sym = false
+                 sym = true
+                 break
              }
            }
         }
@@ -254,7 +260,8 @@ class MyRobot extends BCAbstractRobot {
             this.log("no spawn locations available")
          }
       }
-      else if(pcount >= pMax && step > 2){
+
+      else if(pcount >= pMax && step > 2 && rush){
          var location = this.choose_spawn(this, r1choices)
          if(location != undefined){
 
@@ -282,6 +289,11 @@ class MyRobot extends BCAbstractRobot {
          }
          else{
             this.log("no spawn locations available")
+         }
+      }
+      else if(pcount >= pMax && step > 2){
+         if(this.karbonite >= 150){
+            rush = true
          }
       }
 
